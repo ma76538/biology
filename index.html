@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI營養健康管理系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --main-green: #4A8B5C;
+            --light-green: #A7C4B5;
+            --bg-green: #E8F3ED;
+            --accent-green: #62A87C;
+            --text-dark: #2C3E50;
+            --text-light: #7F8C8D;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-green);
+            overflow-y: auto;
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        .nav-buttons {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: flex-end;
+            background: none;
+            box-shadow: none;
+        }
+
+        .btn {
+            background-color: var(--main-green);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            font-size: 1rem;
+            box-shadow: var(--shadow);
+        }
+
+        .btn:hover {
+            background-color: var(--accent-green);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .page {
+            display: none;
+            padding: 20px;
+            overflow-y: auto;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .page-title {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: var(--main-green);
+            font-weight: 700;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .page-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background-color: var(--accent-green);
+            border-radius: 2px;
+        }
+
+        .content-container {
+            overflow-y: auto;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        #home {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            gap: 30px;
+        }
+
+        .home-content {
+            flex: 1;
+            min-width: 300px;
+            padding-right: 20px;
+            margin-top: -50px; /* Offset for nav buttons */
+        }
+
+        .home-content h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            color: var(--main-green);
+            line-height: 1.2;
+        }
+
+        .home-content p {
+            font-size: 1.1em;
+            color: var(--text-light);
+            margin-bottom: 30px;
+        }
+
+        .home-image {
+            flex: 1;
+            min-width: 300px;
+            background-color: white;
+            padding: 30px;
+            border-radius: 30px;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .home-image:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .home-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 20px;
+            object-fit: cover;
+        }
+
+        .form-group {
+            margin: 20px 0;
+            max-width: 500px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        .form-group input, 
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border-radius: 15px;
+            border: 2px solid var(--light-green);
+            background-color: white;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--main-green);
+            box-shadow: 0 0 0 3px rgba(74, 139, 92, 0.1);
+        }
+
+        .result-box {
+            background-color: white;
+            padding: 25px;
+            border-radius: 20px;
+            margin: 20px 0;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+
+        .result-box:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-box h3 {
+            color: var(--main-green);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .button-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        #health-data .chart-box {
+            height: 60vh;
+            position: relative;
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+            width: 100%;
+        }
+
+        #health-data .chart-container {
+            width: 100%;
+            height: calc(100% - 40px); /* Subtract the height of the title */
+            position: relative;
+        }
+
+        #healthChart {
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            #health-data .chart-box {
+                height: 50vh;
+            }
+        }
+
+        .nutrition-box {
+            margin-bottom: 30px;
+        }
+
+        #nutritionList {
+            list-style: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        #nutritionList li {
+            background: rgba(167, 196, 181, 0.1);
+            border-radius: 15px;
+            padding: 15px 20px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 10px;
+            border: none;
+        }
+
+        #nutritionList li .label {
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        #nutritionList li .value {
+            color: var(--main-green);
+            font-weight: 700;
+            font-size: 1.2em;
+            text-align: right;
+        }
+
+        #nutritionList li .unit {
+            color: var(--text-light);
+            font-size: 0.9em;
+            min-width: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .nav-buttons {
+                position: fixed;
+                width: 100%;
+                top: 10px;
+                right: 0;
+                justify-content: center;
+                background: none;
+                box-shadow: none;
+            }
+
+            #nutritionList {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            #nutritionList li {
+                padding: 12px 15px;
+            }
+
+            .nav-buttons {
+                justify-content: center;
+                padding: 15px;
+            }
+
+            .page-title {
+                font-size: 2em;
+                text-align: center;
+            }
+
+            .page-title::after {
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            .button-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .button-container input[type="file"],
+            .button-container button {
+                width: 100%;
+            }
+
+            #home {
+                padding: 40px 20px;
+                text-align: center;
+            }
+
+            .home-content {
+                padding-right: 0;
+                margin-top: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-buttons">
+        <button class="btn" onclick="showPage('home')">主頁</button>
+        <button class="btn" onclick="showPage('profile')">個人資料</button>
+        <button class="btn" onclick="showPage('food-analysis')">食物分析</button>
+        <button class="btn" onclick="showPage('health-data')">健康數據</button>
+    </div>
+
+    <!-- 主頁 -->
+    <div id="home" class="page home">
+        <div class="home-content">
+            <h1>基於人工智能的營養及健康管理系統</h1>
+            <p>歡迎使用我們的AI營養健康管理系統。這個系統將幫助您追蹤和改善您的飲食習慣，提供個性化的營養建議，並協助您達到健康目標。</p>
+        </div>
+        <div class="home-image">
+            <img src="https://images.unsplash.com/photo-1490645935967-10de6ba17061" alt="健康飲食與生活方式">
+        </div>
+    </div>
+
+    <!-- 個人資料頁面 -->
+    <div id="profile" class="page">
+        <h1 class="page-title">個人資料</h1>
+        <div class="content-container">
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="age">年齡</label>
+                    <input type="number" id="age" required>
+                </div>
+                <div class="form-group">
+                    <label for="gender">性別</label>
+                    <select id="gender" required>
+                        <option value="male">男性</option>
+                        <option value="female">女性</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="height">身高 (cm)</label>
+                    <input type="number" id="height" required>
+                </div>
+                <div class="form-group">
+                    <label for="weight">體重 (kg)</label>
+                    <input type="number" id="weight" required>
+                </div>
+                <div class="form-group">
+                    <label for="activity">活動量</label>
+                    <select id="activity" required>
+                        <option value="1">久座不動（辦公室工作）</option>
+                        <option value="2">輕度活動（每周運動一至兩次）</option>
+                        <option value="3">中度活動（每周運動三至五次）</option>
+                        <option value="4">重度活動（每周運動六至七次）</option>
+                        <option value="5">極重度運動（運動員等級）</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn">計算</button>
+            </form>
+            <div id="calculationResults" class="result-box"></div>
+        </div>
+    </div>
+
+    <!-- 食物分析頁面 -->
+    <div id="food-analysis" class="page">
+        <h1 class="page-title">食物分析</h1>
+        <div class="content-container">
+            <div class="vertical-layout">
+                <div class="form-group">
+                    <label for="mealType">餐飲類型</label>
+                    <select id="mealType">
+                        <option value="breakfast">早餐</option>
+                        <option value="lunch">午餐</option>
+                        <option value="dinner">晚餐</option>
+                        <option value="snack">下午茶</option>
+                        <option value="midnight">宵夜</option>
+                    </select>
+                </div>
+                <div class="button-container">
+                    <input type="file" id="foodImage" accept="image/*" class="btn">
+                    <button onclick="analyzeFoodImage()" class="btn">分析食物圖片</button>
+                </div>
+                <div id="analysisResult" class="result-box"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 健康數據頁面 -->
+    <div id="health-data" class="page">
+        <h1 class="page-title">健康數據</h1>
+        <div class="content-container">
+            <div class="vertical-layout">
+                <div class="result-box nutrition-box">
+                    <h3>今日營養攝取</h3>
+                    <ul id="nutritionList">
+                        <li>
+                            <span class="label">總能量</span>
+                            <span class="value" id="totalCalories">0</span>
+                            <span class="unit">kcal</span>
+                        </li>
+                        <li>
+                            <span class="label">碳水化合物</span>
+                            <span class="value" id="totalCarbs">0</span>
+                            <span class="unit">g</span>
+                        </li>
+                        <li>
+                            <span class="label">脂肪</span>
+                            <span class="value" id="totalFat">0</span>
+                            <span class="unit">g</span>
+                        </li>
+                        <li>
+                            <span class="label">蛋白質</span>
+                            <span class="value" id="totalProtein">0</span>
+                            <span class="unit">g</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="result-box chart-box">
+                    <h3>能量攝取趨勢</h3>
+                    <div class="chart-container">
+                        <canvas id="healthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
